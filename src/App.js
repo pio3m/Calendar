@@ -77,12 +77,18 @@ function App() {
   }
 
   async function createCalendarEvent() {
+    console.log("createCalendarEvent");
+
     if (!patientName || !phoneNumber || !selectedService || !selectedDate || !selectedTime) {
       alert("Proszę wypełnić wszystkie pola.");
+     console.log("patientName", patientName);
+     console.log("phoneNumber", phoneNumber);
+     console.log("selectedService", selectedService);
+     console.log("selectedDate", selectedDate);
+     console.log("selectedTime", selectedTime); 
       return;
     }
-alert("kiknieto createCalendarEvent ");
-
+    
     const startDateTime = new Date(selectedDate);
     startDateTime.setHours(parseInt(selectedTime.split(":")[0], 10));
     startDateTime.setMinutes(parseInt(selectedTime.split(":")[1], 10));
@@ -118,15 +124,13 @@ alert("kiknieto createCalendarEvent ");
       });
   }
 
-  const availableTimes = [
-    "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"
-  ];
 
   const services = [
     { name: "Konsultacja indywidualna", price: "200 zł", duration: "50 min" },
     { name: "Terapia par", price: "250 zł", duration: "80 min" },
     { name: "Coaching", price: "300 zł", duration: "60 min" },
   ];
+
 
   return (
     <div style={{ maxWidth: '800px', margin: '20px auto', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', backgroundColor: '#f9f9f9' }}>
@@ -177,11 +181,22 @@ alert("kiknieto createCalendarEvent ");
             />
           </div>
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz datę i godzinę:</label>
+            <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz datę:</label>
             <input
-              type="datetime-local"
+              type="date"
               onChange={(e) => setSelectedDate(new Date(e.target.value))}
-              value={selectedDate.toISOString().slice(0, 16)} // Formatowanie daty do 'YYYY-MM-DDTHH:MM'
+              value={selectedDate.toISOString().slice(0, 10)} // Formatowanie daty do 'YYYY-MM-DD'
+              style={{ width: '100%', borderRadius: '4px', padding: '10px' }}
+            />
+          </div>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz godzinę:</label>
+            <input
+              type="time"
+              onChange={(e) => setSelectedTime(e.target.value)}
+              value={selectedTime}
+              min="08:00"
+              max="22:00"
               style={{ width: '100%', borderRadius: '4px', padding: '10px' }}
             />
           </div>
@@ -189,7 +204,7 @@ alert("kiknieto createCalendarEvent ");
           <button 
             onClick={createCalendarEvent} 
             style={{ width: '100%', padding: '15px', fontSize: '18px', fontWeight: 'bold', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', marginBottom: '10px' }}
-            disabled={!selectedService || !selectedDate || !selectedTime}
+     
           >
             Zarezerwuj wizytę
           </button>
