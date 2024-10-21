@@ -81,6 +81,7 @@ function App() {
       alert("Proszę wypełnić wszystkie pola.");
       return;
     }
+alert("kiknieto createCalendarEvent ");
 
     const startDateTime = new Date(selectedDate);
     startDateTime.setHours(parseInt(selectedTime.split(":")[0], 10));
