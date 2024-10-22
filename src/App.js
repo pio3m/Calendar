@@ -3,7 +3,9 @@ import { useSession, useSupabaseClient, useSessionContext } from '@supabase/auth
 import DateTimePicker from 'react-datetime-picker';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
-import TimeSelector from './TimeSelector'; // Dodaj ten import na początku pliku
+import TimeSelector from './TimeSelector'; 
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css'; // Import stylów
 
 const localizer = momentLocalizer(moment);
 
@@ -196,18 +198,28 @@ function App() {
               placeholder="Wpisz numer telefonu"
             />
           </div>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz datę:</label>
-            <input
-              type="date"
-              onChange={(e) => {
-                const newDate = new Date(e.target.value);
-                setSelectedDate(newDate);
-                fetchCalendarEvents(newDate, new Date(newDate.getTime() + 24 * 60 * 60 * 1000)); // Pobierz wolne terminy po zmianie daty
-              }}
-              value={selectedDate.toISOString().slice(0, 10)} // Formatowanie daty do 'YYYY-MM-DD'
-              style={{ width: '100%', borderRadius: '4px', padding: '10px' }}
-            />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div style={{ width: '48%' }}>
+              <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz datę:</label>
+              <DatePicker
+                selected={selectedDate} // Użyj selectedDate jako wartości
+                onChange={(date) => {
+                  setSelectedDate(date);
+                  fetchCalendarEvents(date, new Date(date.getTime() + 24 * 60 * 60 * 1000)); // Pobierz wolne terminy po zmianie daty
+                }}
+                dateFormat="yyyy-MM-dd" // Format daty
+                className="date-picker" // Dodaj klasę CSS dla stylizacji
+                style={{ width: '100%', borderRadius: '4px', padding: '10px' }} // Stylizacja
+              />
+            </div>
+            <div style={{ width: '48%' }}>
+              <button 
+                onClick={() => fetchCalendarEvents(selectedDate, new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000))} 
+                style={{ width: '100%', padding: '15px', fontSize: '18px', fontWeight: 'bold', backgroundColor: '#007BFF', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', marginBottom: '10px' }}
+              >
+                Odśwież
+              </button>
+            </div>
           </div>
           <TimeSelector 
             occupiedHours={occupiedHours} 
@@ -223,12 +235,7 @@ function App() {
           >
             Zarezerwuj wizytę
           </button>
-          <button 
-          onClick={() => fetchCalendarEvents(selectedDate, new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000))} // Użycie selectedDate do pobrania zajętych terminów
-          style={{ width: '100%', padding: '15px', fontSize: '18px', fontWeight: 'bold', backgroundColor: '#17a2b8', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: '10px' }}
-        >
-          Pobierz zajęte terminy
-        </button>
+       
           <button 
             onClick={signOut}
             style={{ width: '100%', padding: '15px', fontSize: '18px', fontWeight: 'bold', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
