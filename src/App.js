@@ -3,6 +3,7 @@ import { useSession, useSupabaseClient, useSessionContext } from '@supabase/auth
 import DateTimePicker from 'react-datetime-picker';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
+import TimeSelector from './TimeSelector'; // Dodaj ten import na początku pliku
 
 const localizer = momentLocalizer(moment);
 
@@ -140,6 +141,7 @@ function App() {
   ];
 
 
+
   return (
     <div style={{ maxWidth: '800px', margin: '20px auto', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', backgroundColor: '#f9f9f9' }}>
       {loading ? ( // Wyświetl loader, gdy loading jest true
@@ -205,31 +207,11 @@ function App() {
               style={{ width: '100%', borderRadius: '4px', padding: '10px' }}
             />
           </div>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz godzinę:</label>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              {Array.from({ length: 15 }, (_, i) => (
-                !occupiedHours.includes(i + 8) && ( // Sprawdź, czy godzina jest zajęta
-                  <button
-                    key={i}
-                    onClick={() => setSelectedTime(`${i + 8}:00`)}
-                    style={{
-                      flex: '1',
-                      margin: '5px',
-                      padding: '10px',
-                      borderRadius: '4px',
-                      backgroundColor: selectedTime === `${i + 8}:00` ? '#007BFF' : '#f0f0f0',
-                      color: selectedTime === `${i + 8}:00` ? '#fff' : '#333',
-                      border: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {i + 8}:00
-                  </button>
-                )
-              ))}
-            </div>
-          </div>
+          <TimeSelector 
+            occupiedHours={occupiedHours} 
+            selectedTime={selectedTime} 
+            setSelectedTime={setSelectedTime} 
+          />
          
           <button 
             onClick={createCalendarEvent} 
