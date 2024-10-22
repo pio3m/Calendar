@@ -14,22 +14,27 @@ function App() {
   const [patientName, setPatientName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [currentRange, setCurrentRange] = useState({ start: new Date(), end: new Date() });
+  const [occupiedHours, setOccupiedHours] = useState([]);
+  const [loading, setLoading] = useState(false); // Dodaj stan loading
 
   const session = useSession();
   const supabase = useSupabaseClient();
   const { isLoading } = useSessionContext();
 
   const fetchCalendarEvents = useCallback(async (startDate, endDate) => {
+    setLoading(true); // Ustaw loading na true przed rozpoczęciem ładowania
     const start = startDate.toISOString();
     const end = endDate.toISOString();
 
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start}&timeMax=${end}`, {
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start.split('T')[0]}T00:00:00Z&timeMax=${end.split('T')[0]}T23:59:59Z`, {
       headers: {
         'Authorization': 'Bearer ' + session.provider_token
       }
     });
 
     const data = await response.json();
+    console.log(data);
+    
     if (data.items) {
       const formattedEvents = data.items.map(event => ({
         id: event.id,
@@ -37,10 +42,22 @@ function App() {
         start: new Date(event.start.dateTime),
         end: new Date(event.end.dateTime),
       }));
+
+      // Oblicz zajęte godziny
+      const occupied = formattedEvents.reduce((acc, event) => {
+        const startHour = event.start.getHours();
+        const endHour = event.end.getHours();
+        for (let hour = startHour; hour < endHour; hour++) {
+          acc.push(hour);
+        }
+        return acc;
+      }, []);
+      setOccupiedHours(occupied);
       setEvents(formattedEvents);
     } else {
       setEvents([]);
     }
+    setLoading(false); // Ustaw loading na false po zakończeniu ładowania
   }, [session]);
 
   useEffect(() => {
@@ -70,22 +87,13 @@ function App() {
     await supabase.auth.signOut();
   }
 
-  function handleRangeChange(range) {
-    if (range.start && range.end) {
-      setCurrentRange({ start: range.start, end: range.end });
-    }
-  }
 
   async function createCalendarEvent() {
     console.log("createCalendarEvent");
 
     if (!patientName || !phoneNumber || !selectedService || !selectedDate || !selectedTime) {
       alert("Proszę wypełnić wszystkie pola.");
-     console.log("patientName", patientName);
-     console.log("phoneNumber", phoneNumber);
-     console.log("selectedService", selectedService);
-     console.log("selectedDate", selectedDate);
-     console.log("selectedTime", selectedTime); 
+    
       return;
     }
     
@@ -134,7 +142,11 @@ function App() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '20px auto', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', backgroundColor: '#f9f9f9' }}>
-      {session ? (
+      {loading ? ( // Wyświetl loader, gdy loading jest true
+        <div style={{ textAlign: 'center', margin: '20px' }}>
+          <p>Ładowanie...</p>
+        </div>
+      ) : session ? (
         <>
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Witaj, {session.user.email}</h2>
@@ -184,21 +196,39 @@ function App() {
             <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz datę:</label>
             <input
               type="date"
-              onChange={(e) => setSelectedDate(new Date(e.target.value))}
+              onChange={(e) => {
+                const newDate = new Date(e.target.value);
+                setSelectedDate(newDate);
+                fetchCalendarEvents(newDate, new Date(newDate.getTime() + 24 * 60 * 60 * 1000)); // Pobierz wolne terminy po zmianie daty
+              }}
               value={selectedDate.toISOString().slice(0, 10)} // Formatowanie daty do 'YYYY-MM-DD'
               style={{ width: '100%', borderRadius: '4px', padding: '10px' }}
             />
           </div>
           <div style={{ marginBottom: '20px' }}>
             <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz godzinę:</label>
-            <input
-              type="time"
-              onChange={(e) => setSelectedTime(e.target.value)}
-              value={selectedTime}
-              min="08:00"
-              max="22:00"
-              style={{ width: '100%', borderRadius: '4px', padding: '10px' }}
-            />
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              {Array.from({ length: 15 }, (_, i) => (
+                !occupiedHours.includes(i + 8) && ( // Sprawdź, czy godzina jest zajęta
+                  <button
+                    key={i}
+                    onClick={() => setSelectedTime(`${i + 8}:00`)}
+                    style={{
+                      flex: '1',
+                      margin: '5px',
+                      padding: '10px',
+                      borderRadius: '4px',
+                      backgroundColor: selectedTime === `${i + 8}:00` ? '#007BFF' : '#f0f0f0',
+                      color: selectedTime === `${i + 8}:00` ? '#fff' : '#333',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {i + 8}:00
+                  </button>
+                )
+              ))}
+            </div>
           </div>
          
           <button 
@@ -208,6 +238,12 @@ function App() {
           >
             Zarezerwuj wizytę
           </button>
+          <button 
+          onClick={() => fetchCalendarEvents(selectedDate, new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000))} // Użycie selectedDate do pobrania zajętych terminów
+          style={{ width: '100%', padding: '15px', fontSize: '18px', fontWeight: 'bold', backgroundColor: '#17a2b8', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: '10px' }}
+        >
+          Pobierz zajęte terminy
+        </button>
           <button 
             onClick={signOut}
             style={{ width: '100%', padding: '15px', fontSize: '18px', fontWeight: 'bold', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
