@@ -1,6 +1,7 @@
 import React from 'react';
 
 function TimeSelector({ occupiedHours, selectedTime, setSelectedTime }) {
+  console.log(occupiedHours, selectedTime);
   return (
     <div style={{ marginBottom: '20px' }}>
       <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz godzinę:</label>
@@ -19,7 +20,7 @@ function TimeSelector({ occupiedHours, selectedTime, setSelectedTime }) {
                 margin: '5px',
                 padding: '10px',
                 borderRadius: '4px',
-                backgroundColor: selectedTime === timeLabel ? '#007BFF' : isOccupied ? '#ddd' : '#f0f0f0',
+                backgroundColor: isOccupied ? '#ccc' : (selectedTime === timeLabel ? '#007BFF' : '#f0f0f0'), // Zmiana koloru na szary, gdy godzina jest zajęta
                 color: selectedTime === timeLabel ? '#fff' : '#333',
                 border: 'none',
                 cursor: isOccupied ? 'not-allowed' : 'pointer',

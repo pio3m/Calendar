@@ -23,18 +23,18 @@ function App() {
   const { isLoading } = useSessionContext();
 
   const fetchCalendarEvents = useCallback(async (startDate, endDate) => {
-    setLoading(true); // Ustaw loading na true przed rozpoczęciem ładowania
-    const start = startDate.toISOString();
-    const end = endDate.toISOString();
+    // setLoading(true); // Ustaw loading na true przed rozpoczęciem ładowania
+    const start = new Date(startDate.setHours(0, 0, 0, 0)).toISOString(); // Ujednolicenie formatu daty startowej
+    const end = new Date(endDate.setHours(23, 59, 59, 999)).toISOString(); // Ujednolicenie formatu daty końcowej
+    console.log(startDate, end); // Sprawdzenie formatów dat
 
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start.split('T')[0]}T00:00:00Z&timeMax=${end.split('T')[0]}T23:59:59Z`, {
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start}&timeMax=${end}`, {
       headers: {
         'Authorization': 'Bearer ' + session.provider_token
       }
     });
 
     const data = await response.json();
-    console.log(data);
     
     if (data.items) {
       const formattedEvents = data.items.map(event => ({
@@ -53,8 +53,10 @@ function App() {
         }
         return acc;
       }, []);
-      setOccupiedHours(occupied);
+      setOccupiedHours(occupied); // Ustaw zajęte godziny
       setEvents(formattedEvents);
+      // Dodaj odświeżenie komponentu z godzinami
+      setSelectedTime(""); // Resetuj wybraną godzinę
     } else {
       setEvents([]);
     }
@@ -211,6 +213,7 @@ function App() {
             occupiedHours={occupiedHours} 
             selectedTime={selectedTime} 
             setSelectedTime={setSelectedTime} 
+            isOccupied={(hour) => occupiedHours.includes(hour)} // Dodaj funkcję sprawdzającą zajętość
           />
          
           <button 
