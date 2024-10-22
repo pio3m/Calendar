@@ -1,7 +1,8 @@
 import React from 'react';
 
 function TimeSelector({ occupiedHours, selectedTime, setSelectedTime }) {
-  console.log(occupiedHours, selectedTime);
+ 
+  
   return (
     <div style={{ marginBottom: '20px' }}>
       <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz godzinę:</label>

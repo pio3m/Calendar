@@ -19,18 +19,19 @@ function App() {
   const [currentRange, setCurrentRange] = useState({ start: new Date(), end: new Date() });
   const [occupiedHours, setOccupiedHours] = useState([]);
   const [loading, setLoading] = useState(false); // Dodaj stan loading
+  const [calendars, setCalendars] = useState([]); // Dodaj stan do przechowywania kalendarzy
+  const [selectedCalendar, setSelectedCalendar] = useState(""); // Dodaj stan do przechowywania wybranego kalendarza
 
   const session = useSession();
   const supabase = useSupabaseClient();
   const { isLoading } = useSessionContext();
 
   const fetchCalendarEvents = useCallback(async (startDate, endDate) => {
-    // setLoading(true); // Ustaw loading na true przed rozpoczęciem ładowania
     const start = new Date(startDate.setHours(0, 0, 0, 0)).toISOString(); // Ujednolicenie formatu daty startowej
     const end = new Date(endDate.setHours(23, 59, 59, 999)).toISOString(); // Ujednolicenie formatu daty końcowej
     console.log(startDate, end); // Sprawdzenie formatów dat
 
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start}&timeMax=${end}`, {
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${selectedCalendar}/events?timeMin=${start}&timeMax=${end}`, {
       headers: {
         'Authorization': 'Bearer ' + session.provider_token
       }
@@ -57,19 +58,43 @@ function App() {
       }, []);
       setOccupiedHours(occupied); // Ustaw zajęte godziny
       setEvents(formattedEvents);
-      // Dodaj odświeżenie komponentu z godzinami
       setSelectedTime(""); // Resetuj wybraną godzinę
     } else {
       setEvents([]);
     }
     setLoading(false); // Ustaw loading na false po zakończeniu ładowania
-  }, [session]);
+  }, [session, selectedCalendar]); // Dodano selectedCalendar jako zależność
 
   useEffect(() => {
     if (session) {
+      fetchCalendars(); // Pobierz kalendarze po zalogowaniu
       fetchCalendarEvents(currentRange.start, currentRange.end);
     }
   }, [session, currentRange]);
+
+  useEffect(() => {
+    fetchCalendars(); // Wywołaj fetchCalendars przy starcie
+  }, []); // Pusty array, aby wywołać tylko raz przy montowaniu komponentu
+
+  const fetchCalendars = async () => {
+    try {
+      const response = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", {
+        headers: {
+          'Authorization': 'Bearer ' + session.provider_token
+        }
+      });
+      const data = await response.json();
+      console.log(data); // Dodaj log do sprawdzenia danych
+      if (data.items) {
+        setCalendars(data.items); // Ustaw kalendarze
+        setSelectedCalendar(data.items[0].id); // Ustaw domyślnie pierwszy kalendarz
+      } else {
+        console.error("Brak kalendarzy w odpowiedzi."); // Log w przypadku braku kalendarzy
+      }
+    } catch (error) {
+      console.error("Błąd podczas pobierania kalendarzy:", error); // Log błędu
+    }
+  };
 
   if (isLoading) {
     return <></>;
@@ -94,8 +119,7 @@ function App() {
 
 
   async function createCalendarEvent() {
-    console.log("createCalendarEvent");
-
+    
     if (!patientName || !phoneNumber || !selectedService || !selectedDate || !selectedTime) {
       alert("Proszę wypełnić wszystkie pola.");
     
@@ -119,22 +143,23 @@ function App() {
       }
     };
 
-    await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+    await fetch(`https://www.googleapis.com/calendar/v3/calendars/${selectedCalendar}/events`, { // Użyj wybranego kalendarza
       method: "POST",
       headers: {
         'Authorization': 'Bearer ' + session.provider_token,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(event)
-    }).then((response) => response.json())
-      .then((data) => {
-        alert("Wydarzenie utworzone, sprawdź swój Kalendarz Google!");
-        fetchCalendarEvents(currentRange.start, currentRange.end);
-      })
-      .catch((error) => {
-        alert("Błąd przy tworzeniu wydarzenia");
-        console.error(error);
-      });
+    })
+    .then((response) => response.json())
+    .then((data) => {
+      alert("Wydarzenie utworzone, sprawdź swój Kalendarz Google!");
+      fetchCalendarEvents(currentRange.start, currentRange.end);
+    })
+    .catch((error) => {
+      alert("Błąd przy tworzeniu wydarzenia");
+      console.error(error);
+    });
   }
 
 
@@ -178,6 +203,19 @@ function App() {
           </div>
 
           <h3 style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center', marginBottom: '20px' }}>Zarezerwuj wizytę</h3>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Wybierz kalendarz:</label>
+            <select 
+              value={selectedCalendar} 
+              onChange={(e) => setSelectedCalendar(e.target.value)} 
+              style={{ width: '100%', borderRadius: '4px', padding: '10px' }}
+            >
+              {calendars.map(calendar => (
+                <option key={calendar.id} value={calendar.id}>{calendar.summary}</option>
+              ))}
+            </select>
+          </div>
+          
           <div style={{ marginBottom: '20px' }}>
             <label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Imię pacjenta:</label>
             <input
